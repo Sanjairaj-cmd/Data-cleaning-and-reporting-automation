@@ -1,0 +1,14 @@
+Transaction_ID,Date,Region,Product_Category,Quantity,Unit_Price,Total_Revenue,Discount_Pct,Payment_Method
+TXN-1001,2024-01-01,North,Electronics,2,499.99,999.98,0.05,Credit Card
+TXN-1002,2024-01-02,South,Furniture,1,250.00,250.00,0.00,PayPal
+TXN-1003,2024-01-02,East,Clothing,5,29.99,149.95,0.10,Credit Card
+TXN-1004,2024-01-03,West,Electronics,10,899.00,8990.00,0.15,Bank Transfer
+TXN-1005,2024-01-04,North,Clothing,,19.99,,0.00,Cash
+TXN-1006,2024-01-04,South,Electronics,1,1200.00,-1200.00,0.00,Credit Card
+TXN-1007,2024-01-05,East,Furniture,3,150.00,450.00,UNKNOWN,PayPal
+TXN-1002,2024-01-02,South,Furniture,1,250.00,250.00,0.00,PayPal
+TXN-1008,2024-01-06,West,Clothing,4,45.00,180.00,0.05,Credit Card
+TXN-1009,2024-01-07,  North  ,Electronics,1,3500.00,3500.00,0.20,Credit Card
+TXN-1010,2024-01-08,South,Furniture,2,80.00,160.00,0.00,Cash
+TXN-1011,2024-01-09,East,Electronics,500,15.00,7500.00,0.10,Credit Card
+TXN-1012,2024-01-10,West,Clothing,3,35.00,105.00,0.00,Cash

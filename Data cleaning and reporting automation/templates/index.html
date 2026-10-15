@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoCleanPro | Advanced Data Cleaning & Reporting Automation</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Plotly.js CDN -->
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+
+    <!-- Header Navbar -->
+    <nav class="navbar">
+        <div class="brand">
+            <div class="brand-icon">✨</div>
+            <div>
+                <div class="brand-title">AutoCleanPro</div>
+                <div class="brand-subtitle">Data Cleaning & Reporting Engine</div>
+            </div>
+        </div>
+        <div class="nav-links">
+            <button class="nav-link-btn" onclick="resetApp()">📂 New Upload</button>
+            <button class="nav-link-btn" onclick="switchTab('history')">📜 History Log</button>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="main-container">
+
+        <!-- 1. Upload Card Section -->
+        <div id="upload-section" class="upload-card">
+            <div id="drop-zone" class="drop-zone">
+                <div class="drop-icon">📁</div>
+                <div class="drop-title">Drag & Drop Dataset Here or Click to Browse</div>
+                <div class="drop-subtitle">Supports CSV (.csv) and Excel (.xlsx, .xls) up to 32MB</div>
+                <input type="file" id="file-input" class="file-input" accept=".csv, .xlsx, .xls">
+            </div>
+
+            <div style="margin-top: 1.5rem;">
+                <p style="font-size: 0.9rem; color: var(--text-muted); font-weight: 500;">Or try with pre-loaded sample datasets:</p>
+                <div class="samples-container">
+                    <button class="btn-sample" onclick="loadSampleDataset('sample_customer_churn.csv')">📊 Customer Churn Dataset (Dirty)</button>
+                    <button class="btn-sample" onclick="loadSampleDataset('sample_sales_data.csv')">📈 Sales Transactions Dataset (Dirty)</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Dashboard Container (Hidden until dataset loaded) -->
+        <div id="dashboard-container" style="display: none;">
+
+            <!-- Header Info Bar -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; background: white; padding: 1.25rem 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+                <div>
+                    <h2 id="dataset-filename" style="font-size: 1.35rem; font-weight: 700; color: var(--secondary);">dataset.csv</h2>
+                    <span id="dataset-dims" class="badge badge-info" style="font-size: 0.85rem; margin-top: 4px;">0 Rows × 0 Cols</span>
+                </div>
+                <div>
+                    <button class="btn-outline" onclick="resetApp()">Change File</button>
+                </div>
+            </div>
+
+            <!-- Tab Headers -->
+            <div class="tabs-header">
+                <button class="tab-btn active" data-tab="overview">📊 Overview & Quality</button>
+                <button class="tab-btn" data-tab="issues">🔍 Issues Detected</button>
+                <button class="tab-btn" data-tab="controls">🛠️ Cleaning Controls</button>
+                <button class="tab-btn" data-tab="comparison">⚖️ Preview & Comparison</button>
+                <button class="tab-btn" data-tab="statistics">📈 Summary Analytics</button>
+                <button class="tab-btn" data-tab="history">📜 History</button>
+            </div>
+
+            <!-- TAB 1: OVERVIEW -->
+            <div id="tab-overview" class="dashboard-section active">
+                <div class="grid-cards">
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <h4>Quality Score</h4>
+                            <div id="card-score" class="stat-value">0%</div>
+                            <div id="card-grade" class="stat-desc">Grade: -</div>
+                        </div>
+                        <div class="stat-icon blue">⭐</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <h4>Total Records</h4>
+                            <div id="card-rows" class="stat-value">0</div>
+                            <div class="stat-desc">Dataset Rows</div>
+                        </div>
+                        <div class="stat-icon green">📄</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <h4>Missing Cells</h4>
+                            <div id="card-missing" class="stat-value">0</div>
+                            <div class="stat-desc">Null / NaN Values</div>
+                        </div>
+                        <div class="stat-icon amber">⚠️</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <h4>Duplicate Rows</h4>
+                            <div id="card-duplicates" class="stat-value">0</div>
+                            <div class="stat-desc">Identical Records</div>
+                        </div>
+                        <div class="stat-icon red">🔄</div>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="chart-card">
+                        <div class="chart-title">Overall Quality Gauge</div>
+                        <div id="raw-score-gauge" class="plotly-chart"></div>
+                    </div>
+                    <div class="chart-card">
+                        <div class="chart-title">Missing Values Breakdown</div>
+                        <div id="missing-values-chart" class="plotly-chart"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: ISSUES DETECTED -->
+            <div id="tab-issues" class="dashboard-section">
+                <div class="panel-card">
+                    <div class="panel-title">🔍 Detected Issues & Column Diagnostic Report</div>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
+                        Exhaustive scan results for missing values, format invalidations, data type mismatches, and IQR numerical outliers.
+                    </p>
+                    <div class="table-container">
+                        <table id="issues-detail-table" class="custom-table">
+                            <!-- Populated dynamically -->
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: CLEANING CONTROLS -->
+            <div id="tab-controls" class="dashboard-section">
+                <!-- One-click Auto Clean Card -->
+                <div class="panel-card" style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-color: #bfdbfe;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                        <div>
+                            <h3 style="font-size: 1.2rem; font-weight: 700; color: #1e40af; margin-bottom: 4px;">🚀 Automated One-Click Cleaning Engine</h3>
+                            <p style="color: #3b82f6; font-size: 0.9rem;">
+                                Automatically removes duplicate rows, trims whitespace, converts inferred types, imputes missing values with mean/mode, and clips IQR outliers.
+                            </p>
+                        </div>
+                        <button class="btn-primary" onclick="triggerAutoClean()">⚡ Execute One-Click Auto Clean</button>
+                    </div>
+                </div>
+
+                <!-- Custom Cleaning Rules Panel -->
+                <div class="panel-card">
+                    <div class="panel-title">⚙️ Custom Cleaning Rules Configuration</div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem; background: #f8fafc; padding: 1.25rem; border-radius: 8px;">
+                        <div>
+                            <label class="form-check">
+                                <input type="checkbox" id="check-remove-dup" checked>
+                                <span>Remove Duplicate Rows</span>
+                            </label>
+                        </div>
+                        <div>
+                            <label class="form-check">
+                                <input type="checkbox" id="check-trim-whitespace" checked>
+                                <span>Trim Whitespace & Clean Empty Strings</span>
+                            </label>
+                        </div>
+                        <div>
+                            <label class="form-label">Text Casing Standardization:</label>
+                            <select id="select-casing" class="form-select">
+                                <option value="none" selected>No Casing Change</option>
+                                <option value="lower">lowercase</option>
+                                <option value="upper">UPPERCASE</option>
+                                <option value="title">Title Case</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <h4 style="font-size: 1rem; font-weight: 700; color: var(--secondary); margin-bottom: 1rem;">Column-Level Imputation & Outlier Strategies:</h4>
+                    
+                    <div id="column-rules-container">
+                        <!-- Populated dynamically per column -->
+                    </div>
+
+                    <div style="margin-top: 1.5rem; text-align: right;">
+                        <button class="btn-success" onclick="triggerCustomClean()">Apply Custom Cleaning Pipeline</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: PREVIEW & COMPARISON -->
+            <div id="tab-comparison" class="dashboard-section">
+                <!-- Comparison Banner -->
+                <div id="comparison-banner" class="comparison-banner" style="display: none;">
+                    <div>
+                        <h3 style="font-size: 1.25rem; font-weight: 700;">Data Quality Transformation Summary</h3>
+                        <p style="font-size: 0.9rem; opacity: 0.85;">Dataset cleaned successfully. Download cleaned dataset or PDF report below.</p>
+                    </div>
+                    <div style="display: flex; gap: 20px; align-items: center;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 0.75rem; opacity: 0.8; text-transform: uppercase;">Raw Score</div>
+                            <div id="raw-score-banner" style="font-size: 1.5rem; font-weight: 700; color: #fca5a5;">0%</div>
+                        </div>
+                        <div style="font-size: 1.5rem;">➔</div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 0.75rem; opacity: 0.8; text-transform: uppercase;">Cleaned Score</div>
+                            <div id="cleaned-score-banner" style="font-size: 1.5rem; font-weight: 700; color: #86efac;">0%</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 0.75rem; opacity: 0.8; text-transform: uppercase;">Net Delta</div>
+                            <div id="improvement-banner" style="font-size: 1.5rem; font-weight: 700; color: #bfdbfe;">+0%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Export Download Action Cards -->
+                <div id="downloads-section" class="panel-card" style="display: none; background: #f0fdf4; border-color: #bbf7d0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                        <div>
+                            <h4 style="font-size: 1.1rem; font-weight: 700; color: #166534;">📥 Export & Downloads Ready</h4>
+                            <p style="font-size: 0.85rem; color: #15803d;">Download optimized cleaned data or complete audit PDF report.</p>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <a id="btn-download-csv" href="#" class="btn-success">Download Cleaned CSV</a>
+                            <a id="btn-download-xlsx" href="#" class="btn-success" style="background:#059669;">Download Cleaned Excel</a>
+                            <a id="btn-download-pdf" href="#" class="btn-primary" style="background:#4f46e5;">Download PDF Audit Report</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cleaning Pipeline Executed Log -->
+                <div class="panel-card">
+                    <div class="panel-title">📋 Executed Operations Log</div>
+                    <ul id="cleaning-log-list" class="log-list">
+                        <li class="log-item"><span>ℹ️</span> <span>No cleaning actions executed yet. Click 'Execute One-Click Auto Clean' in Cleaning Controls tab.</span></li>
+                    </ul>
+                </div>
+
+                <!-- Side-by-Side Data Table Preview -->
+                <div class="grid-2">
+                    <div>
+                        <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--danger);">Raw Data Preview (First 30 Rows)</h4>
+                        <div class="table-container">
+                            <table id="raw-preview-table" class="custom-table"></table>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--success);">Cleaned Data Preview (First 30 Rows)</h4>
+                        <div class="table-container">
+                            <table id="cleaned-preview-table" class="custom-table"></table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: SUMMARY ANALYTICS -->
+            <div id="tab-statistics" class="dashboard-section">
+                <div class="panel-card">
+                    <div class="panel-title">📐 Descriptive Statistics Matrix</div>
+                    <div class="table-container">
+                        <table id="summary-stats-table" class="custom-table"></table>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <div class="chart-title">Correlation Heatmap</div>
+                    <div id="correlation-heatmap" class="plotly-chart"></div>
+                </div>
+            </div>
+
+            <!-- TAB 6: PROCESSING HISTORY -->
+            <div id="tab-history" class="dashboard-section">
+                <div class="panel-card">
+                    <div class="panel-title">📜 Dataset Cleaning History Log</div>
+                    <div class="table-container">
+                        <table id="history-table" class="custom-table"></table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Loading Spinner Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="spinner-box">
+            <div class="spinner"></div>
+            <h3 id="loading-text" style="font-size: 1.1rem; color: var(--secondary);">Analyzing Dataset...</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 6px;">Processing rows, detecting anomalies & scoring quality.</p>
+        </div>
+    </div>
+
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
